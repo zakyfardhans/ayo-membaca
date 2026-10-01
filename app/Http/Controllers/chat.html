@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Arnaru-AI Chatbot</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #f5f5f5;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .chat {
+                width: 100%;
+                max-width: 700px;
+                height: 90vh;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .header {
+                background: #111827;
+                color: white;
+                padding: 18px 20px;
+            }
+
+            .header h2 {
+                margin: 0;
+                font-size: 20px;
+            }
+
+            .header small {
+                color: #9ca3af;
+            }
+
+            #messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .message {
+                max-width: 80%;
+                padding: 12px 15px;
+                border-radius: 14px;
+                line-height: 1.5;
+                white-space: pre-wrap;
+            }
+
+            .user {
+                align-self: flex-end;
+                background: #2563eb;
+                color: white;
+                border-bottom-right-radius: 4px;
+            }
+
+            .bot {
+                align-self: flex-start;
+                background: #e5e7eb;
+                color: #111827;
+                border-bottom-left-radius: 4px;
+            }
+
+            .input-area {
+                display: flex;
+                gap: 10px;
+                padding: 15px;
+                border-top: 1px solid #eee;
+            }
+
+            #input {
+                flex: 1;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 12px;
+                outline: none;
+                font-size: 15px;
+            }
+
+            #input:focus {
+                border-color: #2563eb;
+            }
+
+            button {
+                border: none;
+                background: #2563eb;
+                color: white;
+                padding: 0 20px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 15px;
+            }
+
+            button:hover {
+                background: #1d4ed8;
+            }
+
+            button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="chat">
+            <div class="header">
+                <h2>🤖 Arnaru-AI</h2>
+                <small>Online • Simple Chatbot</small>
+            </div>
+
+            <div id="messages">
+                <div class="message bot">
+                    Halo! 👋 Ada yang bisa saya bantu?
+                </div>
+            </div>
+
+            <form class="input-area" id="chatForm">
+                <input
+                    id="input"
+                    type="text"
+                    placeholder="Ketik pesan..."
+                    autocomplete="off"
+                    required
+                />
+
+                <button id="sendButton" type="submit">Kirim</button>
+            </form>
+        </div>
+
+        <script>
+            const API_URL = "https://arnaru-ai.vercel.app/api/chat";
+
+            const form = document.getElementById("chatForm");
+            const input = document.getElementById("input");
+            const messages = document.getElementById("messages");
+            const sendButton = document.getElementById("sendButton");
+
+            // ID percakapan agar konteks chat tetap tersimpan
+            const conversationId =
+                localStorage.getItem("arnaru_conversation_id") ||
+                crypto.randomUUID();
+
+            localStorage.setItem("arnaru_conversation_id", conversationId);
+
+            function addMessage(text, type) {
+                const message = document.createElement("div");
+
+                message.className = `message ${type}`;
+                message.textContent = text;
+
+                messages.appendChild(message);
+                messages.scrollTop = messages.scrollHeight;
+
+                return message;
+            }
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const question = input.value.trim();
+
+                if (!question) return;
+
+                addMessage(question, "user");
+
+                input.value = "";
+                input.disabled = true;
+                sendButton.disabled = true;
+
+                const loading = addMessage("Mengetik...", "bot");
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            question: question,
+                            model: "gpt-5.6-luna",
+                            conversationId: conversationId,
+                            webSearch: false,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    console.log("API response:", data);
+
+                    // Menyesuaikan beberapa kemungkinan format response API
+                    const answer =
+                        data.answer ||
+                        data.response ||
+                        data.message ||
+                        data.content ||
+                        data.text ||
+                        data.result;
+
+                    loading.textContent =
+                        answer || "Maaf, AI tidak memberikan jawaban.";
+                } catch (error) {
+                    console.error(error);
+
+                    loading.textContent =
+                        "❌ Terjadi kesalahan saat menghubungi server.";
+                }
+
+                input.disabled = false;
+                sendButton.disabled = false;
+                input.focus();
+            });
+        </script>
+    </body>
+</html>
