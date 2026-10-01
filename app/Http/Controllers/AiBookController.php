@@ -248,6 +248,10 @@ class AiBookController extends Controller
             return response()->json(['message' => 'Batas permintaan Arnaru-AI tercapai. Tunggu sebentar lalu coba lagi.'], 429);
         }
 
+        if ($exception instanceof ArnaruAiException && $exception->statusCode === 502) {
+            return response()->json(['message' => 'Arnaru-AI merespons, tetapi format jawaban teksnya belum dikenali. Periksa skema respons API.'], 502);
+        }
+
         return response()->json(['message' => 'Layanan AI sedang tidak tersedia. Coba lagi sebentar.'], 502);
     }
 }

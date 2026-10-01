@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Books;
 use App\Models\Categories;
+use App\Services\ArnaruAiService;
 use Database\Seeders\BooksSeeder;
 use Database\Seeders\CategoriesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -179,6 +180,51 @@ class BookManagementTest extends TestCase
         $this->assertStringContainsString('name="question"', $sentRequest['body']);
         $this->assertStringContainsString('Apa gagasan utamanya?', $sentRequest['body']);
         $this->assertStringContainsString('thread-existing', $sentRequest['body']);
+    }
+
+    public function test_ai_service_normalizes_nested_reply_response(): void
+    {
+        Http::fake([
+            'https://arnaru-ai.vercel.app/api/chat' => Http::response([
+                'success' => true,
+                'data' => ['reply' => 'Jawaban dari Arnaru.', 'conversationId' => 'thread-reply'],
+            ]),
+        ]);
+
+        $result = app(ArnaruAiService::class)->chat('Tes respons');
+
+        $this->assertSame('Jawaban dari Arnaru.', $result['answer']);
+        $this->assertSame('thread-reply', $result['conversationId']);
+    }
+
+    public function test_ai_service_normalizes_gemini_candidate_text_response(): void
+    {
+        Http::fake([
+            'https://arnaru-ai.vercel.app/api/chat' => Http::response([
+                'candidates' => [
+                    ['content' => ['parts' => [['text' => 'Teks dari candidates.']]]],
+                ],
+            ]),
+        ]);
+
+        $result = app(ArnaruAiService::class)->chat('Tes respons');
+
+        $this->assertSame('Teks dari candidates.', $result['answer']);
+    }
+
+    public function test_catalog_reports_an_unrecognized_upstream_response_clearly(): void
+    {
+        $this->book($this->category('Keuangan'));
+        Http::fake([
+            'https://arnaru-ai.vercel.app/api/chat' => Http::response(['unexpected' => 'shape']),
+        ]);
+
+        $this->postJson(route('ai.catalog'), [
+            'mode' => 'search',
+            'prompt' => 'Buku keuangan',
+            'model' => 'gemini-3-flash',
+        ])->assertStatus(502)
+            ->assertJsonPath('message', 'Arnaru-AI merespons, tetapi format jawaban teksnya belum dikenali. Periksa skema respons API.');
     }
 
     public function test_ai_reader_rejects_pdfs_above_the_upstream_limit_before_sending(): void

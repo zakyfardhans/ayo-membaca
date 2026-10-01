@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -46,10 +47,31 @@ class ArnaruAiService
         }
 
         $data = $response->json();
-        $answer = $this->findString($data, ['answer', 'response', 'content', 'text', 'message', 'result', 'output']);
+        $answer = is_string($data) ? trim($data) : $this->findString($data, [
+            'answer',
+            'reply',
+            'replyText',
+            'reply_text',
+            'answer_text',
+            'generated_text',
+            'output_text',
+            'completion',
+            'response',
+            'content',
+            'text',
+            'message',
+            'result',
+            'output',
+            'data',
+        ]);
 
         if ($answer === null) {
-            throw new RuntimeException('Arnaru AI returned an unsupported response format.');
+            Log::warning('Arnaru AI response did not contain a recognized answer field.', [
+                'content_type' => $response->header('Content-Type'),
+                'response_keys' => is_array($data) ? array_keys($data) : get_debug_type($data),
+            ]);
+
+            throw new ArnaruAiException(502, 'Arnaru AI returned an unsupported response format.');
         }
 
         return [
