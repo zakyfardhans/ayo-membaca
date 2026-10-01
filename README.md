@@ -1,59 +1,114 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AyoMembaca
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+AyoMembaca adalah aplikasi web untuk mengelola inventaris perpustakaan. Pengelola dapat mengatur buku dan kategori, memantau stok, mengunggah dan membaca PDF, serta menggunakan Arnaru-AI untuk membantu membaca dan mencari koleksi.
 
-## About Laravel
+## Fitur
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- CRUD buku dan kategori.
+- Pencarian berdasarkan judul, penulis, atau ISBN; filter kategori dan stok; pagination 10 buku per halaman.
+- Upload sampul dan PDF, pembaca PDF, Trash, restore, dan hapus permanen.
+- Asisten Baca dari PDF: tanya jawab, ringkasan, poin penting, glosarium, panduan baca, dan kuis.
+- Rekomendasi buku, pencarian katalog dengan bahasa sehari-hari, dan saran metadata dari PDF.
+- Dashboard ringkasan koleksi dan stok.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Teknologi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+ dan Laravel 12.
+- MySQL/MariaDB untuk pengembangan lokal; koneksi diatur melalui `.env`.
+- Blade, Tailwind CSS 4, Vite, dan JavaScript.
+- Arnaru-AI dipanggil dari backend Laravel.
 
-## Learning Laravel
+## Persiapan
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Pastikan PHP, Composer, Node.js/npm, dan database sudah tersedia. Dari folder project:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```powershell
+composer install
+Copy-Item .env.example .env
+```
 
-## Laravel Sponsors
+Jika `.env` sudah ada, jangan timpa file tersebut. Atur `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` untuk database lokal. Kemudian jalankan:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```powershell
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+npm install
+npm run build
+```
 
-### Premium Partners
+Pada macOS/Linux, gunakan `cp .env.example .env` sebagai pengganti `Copy-Item`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Jalankan aplikasi:
 
-## Contributing
+```powershell
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Buka alamat yang ditampilkan Artisan, biasanya `http://127.0.0.1:8000`.
 
-## Code of Conduct
+## Development
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Untuk menjalankan Laravel, queue, log, dan Vite bersamaan:
 
-## Security Vulnerabilities
+```powershell
+composer dev
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Atau jalankan Laravel dan Vite secara terpisah dengan `php artisan serve` dan `npm run dev`. Build asset produksi menggunakan `npm run build`.
 
-## License
+## Arnaru-AI
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Arnaru-AI diakses melalui `POST /api/chat` dari backend. API key tidak dikirim dari browser. Konfigurasi terdapat di `config/services.php` dan dapat ditimpa melalui `.env`:
+
+```dotenv
+ARNARU_AI_URL=https://arnaru-ai.vercel.app
+ARNARU_AI_TOKEN=
+ARNARU_AI_MODEL=gemini-3-flash
+ARNARU_AI_TIMEOUT=120
+ARNARU_AI_MAX_PDF_MB=4
+```
+
+`ARNARU_AI_TOKEN` opsional, bergantung pada konfigurasi penyedia. Jangan commit token atau kredensial ke repository. Dropdown dan validasi model menggunakan allowlist pada `config/services.php`.
+
+PDF buku disimpan di `storage/app/public/books`, sampul di `storage/app/public/covers`, dan diakses melalui `public/storage`. Upload PDF katalog dibatasi 30 MB. Pengiriman PDF ke Arnaru-AI dibatasi 4 MiB secara default; PDF yang lebih besar tetap bisa dibaca di aplikasi, tetapi harus dikompres atau diganti dengan salinan lebih ringan sebelum digunakan oleh fitur AI.
+
+## Data Demo
+
+Setelah migrasi, data contoh dapat dimasukkan dengan:
+
+```powershell
+php artisan db:seed
+```
+
+> **Peringatan:** `BooksSeeder` menyinkronkan 60 buku contoh dan menghapus permanen buku aktif maupun di Trash yang ISBN-nya tidak ada dalam daftar demo. Jalankan hanya pada database pengembangan/demo, bukan database inventaris yang ingin dipertahankan. `CategoriesSeeder` menambah atau memperbarui kategori contoh, tetapi tidak menghapus kategori lain.
+
+File sampul contoh tidak disertakan; aplikasi menampilkan fallback bila file gambar belum tersedia. PDF buku perlu diunggah melalui form sebelum Asisten Baca atau saran metadata dapat digunakan.
+
+## Route Utama
+
+| Route               | Kegunaan                                   |
+| ------------------- | ------------------------------------------ |
+| `/`                 | Dashboard inventaris                       |
+| `/buku`             | Daftar, pencarian, dan filter buku         |
+| `/buku/create`      | Tambah buku                                |
+| `/buku/{book}`      | Detail buku, pembaca PDF, dan Asisten Baca |
+| `/buku/{book}/edit` | Edit buku, upload PDF, dan saran metadata  |
+| `/kategori`         | Kelola kategori                            |
+| `/trash`            | Pulihkan atau hapus permanen buku          |
+
+Endpoint AI aplikasi adalah route POST internal Laravel untuk chat PDF, rekomendasi/pencarian katalog, dan saran metadata. Route AI memiliki rate limit dan hanya mengirim request saat pengguna memulai aksi.
+
+## Pengujian
+
+```powershell
+composer test
+```
+
+Atau jalankan langsung dengan `php artisan test`. PHPUnit memakai SQLite in-memory berdasarkan `phpunit.xml`; test tidak mengubah database pengembangan dari `.env`.
+
+## Referensi
+
+- [Rencana fitur dan rubrik](routes/PLAN.md)
+- [Panduan kerja agent](AGENTS.md)
+- [Dokumentasi Laravel 12](https://laravel.com/docs/12.x)
